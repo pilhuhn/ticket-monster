@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<plugin name="TicketMonster" displayName="JDF Ticket Monster plugin"
+        package="org.rhq.plugins.noop"
+        version="1.0"
+   description="Monitoring of the JDF Ticket Monster application"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns="urn:xmlns:rhq-plugin"
+   xmlns:c="urn:xmlns:rhq-configuration">
+
+  <!--
+     - We don't want to run as a normal agent plugin, but provide meta data only
+     - which means that we don't want to be discovered etc. The No-op plugin provides
+     - us with a nice way of no-op classes that we can (re)-use for this purpose.
+     -
+     - See http://pilhuhn.blogspot.de/2012/07/introducing-no-op-plugin-for-rhq.html
+     - for more details about the no-op plugin
+  -->
+  <depends plugin="No-op" useClasses="true"/>
+
+  <!--The base server type-->
+  <server name="TicketMonster" description="The TicketMonster server instance"
+      class="NoopComponent" discovery="NoopComponent">
+
+    <!--For now; those should move below some service for each show or performance-->
+    <metric property="tickets"  dataType="measurement" displayType="summary" description="Total number tickets sold"/>
+    <metric property="price" displayType="summary" description="Total selling price"/>
+
+    <service name="Performance" description="One single performance of a show"
+           class="NoopComponent" discovery="NoopComponent">
+
+      <metric property="tickets"  dataType="measurement" displayType="summary" description="Number of tickets sold for this performance per booking"/>
+      <metric property="price" displayType="summary" description="Total selling price per booking"/>
+
+   </service>
+
+  </server>
+</plugin>

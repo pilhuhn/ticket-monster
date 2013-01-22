@@ -30,6 +30,7 @@ import org.jboss.jdf.example.ticketmonster.model.Section;
 import org.jboss.jdf.example.ticketmonster.model.Ticket;
 import org.jboss.jdf.example.ticketmonster.model.TicketCategory;
 import org.jboss.jdf.example.ticketmonster.model.TicketPrice;
+import org.jboss.jdf.example.ticketmonster.rhq.RhqClient;
 import org.jboss.jdf.example.ticketmonster.service.AllocatedSeats;
 import org.jboss.jdf.example.ticketmonster.service.SeatAllocationService;
 
@@ -56,10 +57,13 @@ public class BookingService extends BaseEntityService<Booking> {
 
     @Inject @Created
     private Event<Booking> newBookingEvent;
-    
+
     @Inject @Cancelled
     private Event<Booking> cancelledBookingEvent;
-    
+
+    @Inject
+    private RhqClient rhqClient;
+
     public BookingService() {
         super(Booking.class);
     }
@@ -116,11 +120,11 @@ public class BookingService extends BaseEntityService<Booking> {
         try {
             // identify the ticket price categories in this request
             Set<Long> priceCategoryIds = bookingRequest.getUniquePriceCategoryIds();
-            
+
             // load the entities that make up this booking's relationships
             Performance performance = getEntityManager().find(Performance.class, bookingRequest.getPerformance());
 
-            // As we can have a mix of ticket types in a booking, we need to load all of them that are relevant, 
+            // As we can have a mix of ticket types in a booking, we need to load all of them that are relevant,
             // id
             Map<Long, TicketPrice> ticketPricesById = loadTicketPrices(priceCategoryIds);
 
@@ -160,7 +164,7 @@ public class BookingService extends BaseEntityService<Booking> {
                     totalTicketsRequestedPerSection += ticketRequest.getQuantity();
                 }
                 // try to allocate seats
-                
+
                 AllocatedSeats allocatedSeats = seatAllocationService.allocateSeats(section, performance, totalTicketsRequestedPerSection, true);
                 if (allocatedSeats.getSeats().size() == totalTicketsRequestedPerSection) {
                     seatsPerSection.put(section, allocatedSeats);
@@ -193,6 +197,7 @@ public class BookingService extends BaseEntityService<Booking> {
                 booking.setCancellationCode("abc");
                 getEntityManager().persist(booking);
                 newBookingEvent.fire(booking);
+                rhqClient.reportBooking(booking);
                 return Response.ok().entity(booking).type(MediaType.APPLICATION_JSON_TYPE).build();
             } else {
                 Map<String, Object> responseEntity = new HashMap<String, Object>();
