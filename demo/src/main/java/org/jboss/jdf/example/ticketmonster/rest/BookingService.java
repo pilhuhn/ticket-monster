@@ -61,9 +61,6 @@ public class BookingService extends BaseEntityService<Booking> {
     @Inject @Cancelled
     private Event<Booking> cancelledBookingEvent;
 
-    @Inject
-    private RhqClient rhqClient;
-
     public BookingService() {
         super(Booking.class);
     }
@@ -197,7 +194,6 @@ public class BookingService extends BaseEntityService<Booking> {
                 booking.setCancellationCode("abc");
                 getEntityManager().persist(booking);
                 newBookingEvent.fire(booking);
-                rhqClient.reportBooking(booking);
                 return Response.ok().entity(booking).type(MediaType.APPLICATION_JSON_TYPE).build();
             } else {
                 Map<String, Object> responseEntity = new HashMap<String, Object>();

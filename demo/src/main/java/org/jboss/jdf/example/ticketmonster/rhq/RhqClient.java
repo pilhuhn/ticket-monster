@@ -1,6 +1,17 @@
 package org.jboss.jdf.example.ticketmonster.rhq;
 
 
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.ejb.Asynchronous;
+import javax.ejb.Singleton;
+import javax.ejb.Startup;
+import javax.inject.Inject;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -12,25 +23,9 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.ejb.Asynchronous;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-import javax.inject.Inject;
-
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ArrayNode;
-import org.codehaus.jackson.node.ObjectNode;
-
-import org.jboss.jdf.example.ticketmonster.model.Booking;
 
 /**
  * Sample class that reports metrics actively into a RHQ server.
@@ -100,21 +95,6 @@ public class RhqClient {
     }
 
 
-    @Asynchronous
-    public void reportBooking(Booking booking) {
-
-        if (reportTo && initialized) {
-            List<Metric> metrics = new ArrayList<Metric>(2);
-            Metric m = new Metric("tickets", System.currentTimeMillis(), (double) booking.getTickets().size());
-            metrics.add(m);
-            m = new Metric("price", System.currentTimeMillis(), (double) booking.getTotalTicketPrice());
-            metrics.add(m);
-
-            sendMetrics(metrics, ticketMonsterServerId);
-        }
-    }
-
-
     private void reportAvailability(int resourceId, boolean isUp) {
 
         ObjectNode op = mapper.createObjectNode();
@@ -181,7 +161,8 @@ public class RhqClient {
         return node;
     }
 
-    private void sendMetrics(Collection<Metric> metrics, int resourceId) {
+    @Asynchronous
+    public void sendMetrics(Collection<Metric> metrics) {
 
         ArrayNode root = mapper.createArrayNode();
         for (Metric metric : metrics ) {
@@ -192,7 +173,7 @@ public class RhqClient {
             root.add(obj);
         }
 
-        JsonNode node = sendToServer("POST", "/metric/data/raw/" + resourceId, root);
+        JsonNode node = sendToServer("POST", "/metric/data/raw/" + ticketMonsterServerId, root);
 
     }
 
